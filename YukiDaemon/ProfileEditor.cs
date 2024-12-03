@@ -13,8 +13,10 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
 
-namespace YukiDaemon {
-    public partial class ProfileEditor : UserControl, INotifyPropertyChanged {
+namespace YukiDaemon
+{
+    public partial class ProfileEditor : UserControl, INotifyPropertyChanged
+    {
         private StandardStreamsForm? standardStreamsForm;
         private Process? process;
         private ConcurrentQueue<byte[]>? stdoutBytesQueue;
@@ -22,29 +24,34 @@ namespace YukiDaemon {
         private List<string>? stdinList;
         private bool manuallyKilled = false;
 
-        public ProfileEditor() {
+        public ProfileEditor()
+        {
             InitializeComponent();
             Dock = DockStyle.Fill;
             Disposed += ProfileEditor_Disposed;
         }
 
-        private void ProfileEditor_Disposed(object? sender, EventArgs e) {
+        private void ProfileEditor_Disposed(object? sender, EventArgs e)
+        {
             process?.Kill(true);
             process?.WaitForExit();
             //process?.Dispose();
             standardStreamsForm?.Dispose();
         }
 
-        public ProfileEditor(string Name) : this() {
+        public ProfileEditor(string Name) : this()
+        {
             NameTextBox.Text = Name;
         }
 
-        public ProfileEditor(Profile profile) : this() {
+        public ProfileEditor(Profile profile) : this()
+        {
             NameTextBox.Text = profile.Name;
             FileNameTextBox.Text = profile.FileName;
             ArgumentsTextBox.Text = profile.Arguments;
             WorkingDirectoryTextBox.Text = profile.WorkingDirectory;
-            foreach (KeyValuePair<string, string> keyValuePair in profile.Environment) {
+            foreach (KeyValuePair<string, string> keyValuePair in profile.Environment)
+            {
                 EnvironmentDataGridView.Rows.Add(keyValuePair.Key, keyValuePair.Value);
             }
             UseShellExecuteCheckBox.Checked = profile.UseShellExecute;
@@ -71,69 +78,89 @@ namespace YukiDaemon {
 
         public bool AutoStart => AutoStartCheckBox.Checked;
 
-        public string State {
-            get {
-                if (process == null) {
+        public string State
+        {
+            get
+            {
+                if (process == null)
+                {
                     return "Not started.";
                 }
-                else if (process.HasExited) {
-                    if (CountdownTimer.Enabled) {
+                else if (process.HasExited)
+                {
+                    if (CountdownTimer.Enabled)
+                    {
                         return $"Exited. PID: {process.Id}. Exit code: {process.ExitCode}. Countdown: {CountdownTimer.Tag}.";
                     }
-                    else {
+                    else
+                    {
                         return $"Exited. PID: {process.Id}. Exit code: {process.ExitCode}.";
                     }
                 }
-                else {
+                else
+                {
                     return $"Running. PID: {process.Id}.";
                 }
             }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
             // real OnPropertyChanged
-            var work = () => {
+            var work = () =>
+            {
                 StateLabel.Text = "State: " + State;
                 StartButton.Enabled = (process == null || process.HasExited) && !CountdownTimer.Enabled;
                 KillButton.Enabled = process != null && !process.HasExited || CountdownTimer.Enabled;
             };
-            if (propertyName == nameof(State)) {
-                if (InvokeRequired) {
+            if (propertyName == nameof(State))
+            {
+                if (InvokeRequired)
+                {
                     Invoke(work);
                 }
-                else {
+                else
+                {
                     work();
                 }
             }
         }
 
-        private void NameTextBox_TextChanged(object sender, EventArgs e) {
+        private void NameTextBox_TextChanged(object sender, EventArgs e)
+        {
             OnPropertyChanged(nameof(ProfileName));
         }
 
-        private void StandardStreamsButton_Click(object sender, EventArgs e) {
-            if (standardStreamsForm == null) {
-                if (process != null && process.StartInfo.RedirectStandardInput) {
+        private void StandardStreamsButton_Click(object sender, EventArgs e)
+        {
+            if (standardStreamsForm == null)
+            {
+                if (process != null && process.StartInfo.RedirectStandardInput)
+                {
                     standardStreamsForm = new(stdoutBytesQueue, stderrBytesQueue, stdinList, process?.StandardInput.BaseStream);
                 }
-                else {
+                else
+                {
                     standardStreamsForm = new();
                 }
                 standardStreamsForm.FormClosing += (_, _) => standardStreamsForm = null;
                 standardStreamsForm.Show(this);
             }
-            else {
+            else
+            {
                 standardStreamsForm.Activate();
             }
         }
 
-        public void StartProcess() {
+        public void StartProcess()
+        {
             manuallyKilled = false;
 
-            if (process != null && !process.HasExited) {
+            if (process != null && !process.HasExited)
+            {
                 throw new Exception("Start process failed because the last process has not exited.");
             }
             process?.Dispose();
@@ -142,8 +169,10 @@ namespace YukiDaemon {
             processStartInfo.FileName = FileNameTextBox.Text;
             processStartInfo.Arguments = ArgumentsTextBox.Text;
             processStartInfo.WorkingDirectory = WorkingDirectoryTextBox.Text;
-            foreach (DataGridViewRow row in EnvironmentDataGridView.Rows) {
-                if (row.Cells["NameColumn"].Value != null) {
+            foreach (DataGridViewRow row in EnvironmentDataGridView.Rows)
+            {
+                if (row.Cells["NameColumn"].Value != null)
+                {
                     processStartInfo.Environment.Add((string)row.Cells["NameColumn"].Value, (string)row.Cells["ValueColumn"].Value);
                 }
             }
@@ -152,135 +181,191 @@ namespace YukiDaemon {
             processStartInfo.RedirectStandardInput = !UseShellExecuteCheckBox.Checked;
             processStartInfo.RedirectStandardOutput = !UseShellExecuteCheckBox.Checked;
             processStartInfo.RedirectStandardError = !UseShellExecuteCheckBox.Checked;
-            try {
+            try
+            {
                 process = Process.Start(processStartInfo);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 MessageBox.Show(ex.Message, "Error Starting Process", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (process == null) {
+            if (process == null)
+            {
                 MessageBox.Show("Starting process failed.", "Error Starting Process", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             OnPropertyChanged(nameof(State));
             process.EnableRaisingEvents = true;
             process.Exited += Process_Exited;
-            if (stdoutBytesQueue == null) {
+            if (stdoutBytesQueue == null)
+            {
                 stdoutBytesQueue = new();
             }
-            else {
+            else
+            {
                 stdoutBytesQueue.Clear();
             }
             standardStreamsForm?.Invoke(standardStreamsForm.UpdateStdout);
-            if (stderrBytesQueue == null) {
+            if (stderrBytesQueue == null)
+            {
                 stderrBytesQueue = new();
             }
-            else {
+            else
+            {
                 stderrBytesQueue.Clear();
             }
             standardStreamsForm?.Invoke(standardStreamsForm.UpdateStderr);
-            if (stdinList == null) {
+            if (stdinList == null)
+            {
                 stdinList = new();
             }
-            else {
+            else
+            {
                 stdinList.Clear();
             }
             standardStreamsForm?.Invoke(standardStreamsForm.UpdateStdin);
-            if (processStartInfo.RedirectStandardOutput) {
-                Task.Run(() => {
+            if (processStartInfo.RedirectStandardOutput)
+            {
+                Task.Run(() =>
+                {
                     Stream stdout = process.StandardOutput.BaseStream;
                     byte[] buf = new byte[1024 * 1024];
                     int len;
-                    while ((len = stdout.Read(buf)) > 0) {
+                    while ((len = stdout.Read(buf)) > 0)
+                    {
                         byte[] copy = new byte[len];
                         Array.Copy(buf, copy, len);
                         stdoutBytesQueue.Enqueue(copy);
-                        while (stdoutBytesQueue.Count > 10000) {
+                        while (stdoutBytesQueue.Count > 10000)
+                        {
                             stdoutBytesQueue.TryDequeue(out _);
                         }
-                        try {
+                        try
+                        {
                             standardStreamsForm?.Invoke(standardStreamsForm.UpdateStdout);
                         }
-                        catch (ObjectDisposedException ex) {
+                        catch (ObjectDisposedException ex)
+                        {
                             Debug.WriteLine(ex.Message);
                         }
                     }
                 });
             }
-            if (processStartInfo.RedirectStandardError) {
-                Task.Run(() => {
+            if (processStartInfo.RedirectStandardError)
+            {
+                Task.Run(() =>
+                {
                     Stream stderr = process.StandardError.BaseStream;
                     byte[] buf = new byte[1024 * 1024];
                     int len;
-                    while ((len = stderr.Read(buf)) > 0) {
+                    while ((len = stderr.Read(buf)) > 0)
+                    {
                         byte[] copy = new byte[len];
                         Array.Copy(buf, copy, len);
                         stderrBytesQueue.Enqueue(copy);
-                        while (stderrBytesQueue.Count > 10000) {
+                        while (stderrBytesQueue.Count > 10000)
+                        {
                             stderrBytesQueue.TryDequeue(out _);
                         }
-                        try {
+                        try
+                        {
                             standardStreamsForm?.Invoke(standardStreamsForm.UpdateStderr);
                         }
-                        catch (ObjectDisposedException ex) {
+                        catch (ObjectDisposedException ex)
+                        {
                             Debug.WriteLine(ex.Message);
                         }
                     }
                 });
             }
-            if (processStartInfo.RedirectStandardInput) {
-                if (standardStreamsForm != null) {
+            if (processStartInfo.RedirectStandardInput)
+            {
+                if (standardStreamsForm != null)
+                {
                     standardStreamsForm.Stdin = process.StandardInput.BaseStream;
                 }
             }
         }
 
-        private void StartButton_Click(object sender, EventArgs e) {
+        private void StartButton_Click(object sender, EventArgs e)
+        {
             StartProcess();
         }
 
-        private void Process_Exited(object? sender, EventArgs e) {
-            if (InvokeRequired) {
+        private void Process_Exited(object? sender, EventArgs e)
+        {
+            if (InvokeRequired)
+            {
                 Invoke(Process_Exited, sender, e);
                 return;
             }
-            if (!manuallyKilled && AfterStoppedComboBox.SelectedIndex > 0) {
+            if (!manuallyKilled && AfterStoppedComboBox.SelectedIndex > 0)
+            {
                 CountdownTimer.Tag = DelayForSecondsNumericUpDown.Value;
                 CountdownTimer.Start();
             }
             OnPropertyChanged(nameof(State));
         }
 
-        private void ProfileEditor_Load(object sender, EventArgs e) {
-            if (AfterStoppedComboBox.SelectedIndex == -1) {
+        private void ProfileEditor_Load(object sender, EventArgs e)
+        {
+            if (AfterStoppedComboBox.SelectedIndex == -1)
+            {
                 AfterStoppedComboBox.SelectedIndex = 0;
             }
         }
 
-        private void KillButton_Click(object sender, EventArgs e) {
+        private void KillButton_Click(object sender, EventArgs e)
+        {
             manuallyKilled = true;
             process?.Kill(true);
             CountdownTimer.Stop();
             OnPropertyChanged(nameof(State));
         }
 
-        private void CountdownTimer_Tick(object sender, EventArgs e) {
+        private void CountdownTimer_Tick(object sender, EventArgs e)
+        {
             CountdownTimer!.Tag = (decimal)CountdownTimer.Tag - 1;
-            if ((decimal)CountdownTimer.Tag <= 0) {
+            if ((decimal)CountdownTimer.Tag <= 0)
+            {
                 CountdownTimer.Stop();
-                if (AfterStoppedComboBox.SelectedIndex == 1) {
+                if (AfterStoppedComboBox.SelectedIndex == 1)
+                {
                     StartProcess();
                 }
             }
-            else {
+            else
+            {
                 OnPropertyChanged(nameof(State));
             }
         }
 
-        private void UseShellExecuteCheckBox_CheckedChanged(object sender, EventArgs e) {
+        private void UseShellExecuteCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
             CreateNoWindowCheckBox.Enabled = !UseShellExecuteCheckBox.Checked;
             StandardStreamsButton.Enabled = !UseShellExecuteCheckBox.Checked;
+        }
+
+        private void FileNameSelectButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.Filter = "*.exe|*.exe";
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                var fileName = fileDialog.FileName;
+                FileNameTextBox.Text = fileName;
+            }
+        }
+
+        private void WorkingDirectoryBrowseButton_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            dialog.Description = "选择工作目录";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                WorkingDirectoryTextBox.Text = dialog.SelectedPath;
+            }
         }
     }
 }
