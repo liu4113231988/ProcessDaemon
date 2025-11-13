@@ -1,0 +1,17 @@
+﻿{
+  "Type": "2",
+  "Profiles": [
+    {
+      "Name": "influxd",
+      "FileName": "D:\\Develop\\influxdb1\\influxdb-1.7.9\\influxd.exe",
+      "Arguments": "-config .\\influxdb.conf",
+      "WorkingDirectory": "D:\\Develop\\influxdb1\\influxdb-1.7.9",
+      "Environment": [],
+      "UseShellExecute": false,
+      "CreateNoWindow": true,
+      "AutoStart": true,
+      "AfterStopped": 1,
+      "DelayForSeconds": 5
+    }
+  ]
+}
