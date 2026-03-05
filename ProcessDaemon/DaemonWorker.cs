@@ -28,6 +28,8 @@ namespace ProcessDaemon
         {
             try
             {
+                Console.WriteLine("begin start");
+                Console.WriteLine(_config.Profiles.Count);
                 foreach (var profile in _config.Profiles)
                 {
                     if (profile.FileName.EndsWith(".exe"))
@@ -37,13 +39,14 @@ namespace ProcessDaemon
                         {
                             process.EnableRaisingEvents = true;
                             profile.ProcessId = process.Id;
-                            process.Exited += Process_Exited;
+                            
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 Log.Error("ExecuteAsync Error:", ex);
             }
 
@@ -61,12 +64,14 @@ namespace ProcessDaemon
             try
             {
                 Process process = Process.Start(processStartInfo);
+                Console.WriteLine($"Process {profile.Name} started successful.");
                 Log.Information($"Process {profile.Name} started successful.");
-
+                process.Exited += Process_Exited;
                 return process;
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 Log.Error($"Process {profile.Name} start failed for reason:{ex.Message}");
                 return null;
             }
