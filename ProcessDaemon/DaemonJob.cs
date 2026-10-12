@@ -1,39 +1,26 @@
 ﻿using Microsoft.Extensions.Options;
 using Quartz;
 using Serilog;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace ProcessDaemon
 {
     public class DaemonJob : IJob
     {
         private readonly ILogger<DaemonJob> _logger;
-        private readonly string configFilePath = "daemon-config.json";
-        IConfiguration _configuration;
-        Config _config;
-        public DaemonJob(ILogger<DaemonJob> logger, IConfiguration configuration, Config config )
+        private List<Profile> _profileList;
+        public DaemonJob(ILogger<DaemonJob> logger, IOptions<List<Profile>> profiles)
         {
             _logger = logger;
-            _configuration = configuration;
-            _config = config;
+            _profileList = profiles.Value;
         }
         public async Task Execute(IJobExecutionContext context)
         {
-            //Config config = new Config();
-            //_configuration.Bind(config);
-            if (_config.Profiles.Count > 0)
+            var profileList = _profileList?.Where(t => t.Enabled && t.Type == 1).ToList();
+            if (profileList != null && profileList.Count > 0)
             {
-
-                //Config config = JsonSerializer.Deserialize<Config>(content) ?? throw new Exception("Reading config error.");
                 Process[] processes = Process.GetProcesses();
-                foreach (Profile profile in _config.Profiles)
+                foreach (Profile profile in profileList)
                 {
                     var process = processes.Where(t => t.ProcessName == profile.Name).FirstOrDefault();
                     if (process == null)
@@ -45,14 +32,10 @@ namespace ProcessDaemon
 
                         processStartInfo.UseShellExecute = profile.UseShellExecute;
                         processStartInfo.CreateNoWindow = profile.CreateNoWindow;
-                        //processStartInfo.RedirectStandardInput = !UseShellExecuteCheckBox.Checked;
-                        //processStartInfo.RedirectStandardOutput = !UseShellExecuteCheckBox.Checked;
-                        //processStartInfo.RedirectStandardError = !UseShellExecuteCheckBox.Checked;
                         try
                         {
                             process = Process.Start(processStartInfo);
                             Log.Information($"Process {profile.Name} started successful.");
-                            //process.Exited += Process_Exited;
                         }
                         catch (Exception ex)
                         {
@@ -64,9 +47,5 @@ namespace ProcessDaemon
             }
         }
 
-        private void Process_Exited(object? sender, EventArgs e)
-        {
-            //throw new NotImplementedException();
-        }
     }
 }

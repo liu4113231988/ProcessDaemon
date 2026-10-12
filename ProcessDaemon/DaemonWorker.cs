@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Quartz;
 using Serilog;
 using System.Diagnostics;
@@ -12,16 +13,16 @@ namespace ProcessDaemon
         private readonly IConfiguration _configuration;
 
         private bool isServiceStop;
-        private Config _config;
+        private List<Profile> _profileList;
 
         public DaemonWorker(ILogger<DaemonWorker> logger, IHostApplicationLifetime hostApplicationLifetime,
-            IConfiguration configuration, Config config)
+            IConfiguration configuration, IOptions<List<Profile>> profile)
         {
             _logger = logger;
             _hostApplicationLifetime = hostApplicationLifetime;
             _configuration = configuration;
             isServiceStop = false;
-            _config = config;
+            _profileList = profile.Value;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,20 +30,23 @@ namespace ProcessDaemon
             try
             {
                 Console.WriteLine("begin start");
-                Console.WriteLine(_config.Profiles.Count);
-                foreach (var profile in _config.Profiles)
+                var profileList = _profileList?.Where(t => t.Enabled && t.Type == 2).ToList();
+                if (profileList != null)
                 {
-                    if (profile.FileName.EndsWith(".exe"))
+                    foreach (var profile in profileList)
                     {
-                        Process process = StartProcess(profile);
-                        if (process != null)
+                        if (profile.FileName.EndsWith(".exe"))
                         {
-                            process.EnableRaisingEvents = true;
-                            profile.ProcessId = process.Id;
-                            
+                            Process? process = StartProcess(profile);
+                            if (process != null)
+                            {
+                                process.EnableRaisingEvents = true;
+                                profile.ProcessId = process.Id;
+                            }
                         }
                     }
                 }
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {
@@ -52,7 +56,7 @@ namespace ProcessDaemon
 
         }
 
-        private Process StartProcess(Profile profile)
+        private Process? StartProcess(Profile profile)
         {
             ProcessStartInfo processStartInfo = new();
             processStartInfo.FileName = profile.FileName;
@@ -63,11 +67,17 @@ namespace ProcessDaemon
             processStartInfo.CreateNoWindow = profile.CreateNoWindow;
             try
             {
-                Process process = Process.Start(processStartInfo);
-                Console.WriteLine($"Process {profile.Name} started successful.");
-                Log.Information($"Process {profile.Name} started successful.");
-                process.Exited += Process_Exited;
-                return process;
+                Process? process = Process.Start(processStartInfo);
+                if (process != null)
+                {
+                    Console.WriteLine($"Process {profile.Name} started successful.");
+                    Log.Information($"Process {profile.Name} started successful.");
+                    process.EnableRaisingEvents = true;
+                    process.Exited += Process_Exited;
+                    profile.ProcessId = process.Id;
+                    return process;
+                }
+                return null;
             }
             catch (Exception ex)
             {
@@ -82,7 +92,7 @@ namespace ProcessDaemon
             if (process != null)
             {
                 int processId = process.Id;
-                var temp = _config.Profiles.Where(t => t.ProcessId == processId).FirstOrDefault();
+                var temp = _profileList.Where(t => t.Enabled && t.ProcessId == processId).FirstOrDefault();
                 //如果是关闭服务，则不重启应用
                 if (temp != null && !isServiceStop && temp.AfterStopped == 1)
                 {
@@ -92,7 +102,6 @@ namespace ProcessDaemon
                         Task.Delay(temp.DelayForSeconds * 1000);
                     }
                     StartProcess(temp);
-
                 }
 
             }

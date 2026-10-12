@@ -16,53 +16,58 @@ namespace ProcessDaemon
                .CreateLogger();
 
             var builder = Host.CreateApplicationBuilder(args);
-            //builder.Services.AddHostedService<DaemonService>();
             builder.Services.AddWindowsService(option =>
             {
                 option.ServiceName = "ProcessDaemon";
             });
             builder.Services.AddLogging();
-            builder.Configuration.AddJsonFile("daemon-config.json");
-            string jobType = builder.Configuration["Type"].ToString();
-            Config config = new Config();
-            builder.Configuration.Bind(config);
-            builder.Services.AddSingleton(config);
-            if (jobType == "1")
-            {
-                //builder.Services.AddTransient<DaemonJob>();
-                builder.Services.AddQuartz(opt =>
-                {
-                    // these are the defaults
-                    opt.UseSimpleTypeLoader();
-                    opt.UseInMemoryStore();
-                    opt.UseDefaultThreadPool(tp =>
-                    {
-                        tp.MaxConcurrency = 10;
-                    });
-
-                    var jobKey = new JobKey("DaemonProcess", "DaemonProcess Group");
-                    opt.SchedulerId = "DaemonJob";
-                    opt.AddJob<DaemonJob>(jobKey);
-
-                    opt.AddTrigger(opt => opt.ForJob(jobKey)
-                    .WithIdentity("DaemonProcess Trigger")
-                    .StartNow()
-                    .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(30)).RepeatForever())
-                    .WithDescription("Daemon Process Job"));
-                });
-                builder.Services.AddQuartzHostedService(options =>
-                {
-                    // when shutting down we want jobs to complete gracefully
-                    options.WaitForJobsToComplete = true;
-                    options.AwaitApplicationStarted = true;
-                });
-            }
-            else
-            {
-                //DaemonWorker daemonWorker
-                builder.Services.AddHostedService<DaemonWorker>();
-            }
+            builder.Configuration.AddJsonFile("daemon-config.json", true, true);
             
+            builder.Services.Configure<List<Profile>>(
+               builder.Configuration.GetSection("Profiles")
+           );
+            builder.Services.AddQuartz(opt =>
+            {
+                opt.UseSimpleTypeLoader();
+                opt.UseInMemoryStore();
+                opt.UseDefaultThreadPool(tp =>
+                {
+                    tp.MaxConcurrency = 10;
+                });
+
+                var jobKey = new JobKey("DaemonProcess", "DaemonProcess Group");
+                opt.SchedulerId = "DaemonJob";
+                opt.AddJob<DaemonJob>(jobKey);
+
+                opt.AddTrigger(opt => opt.ForJob(jobKey)
+                .WithIdentity("DaemonProcess Trigger")
+                .StartNow()
+                .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(30)).RepeatForever())
+                .WithDescription("Daemon Process Job"));
+
+                var ServiceJobKey = new JobKey("ServiceMonitor", "ServiceMonitor Group");
+                opt.AddJob<ServiceMonitorJob>(ServiceJobKey, (option) =>
+                {
+                    //option.SetJobData(null);
+                    option.WithDescription("After the monitoring service is stopped, it needs to be started.");
+                });
+
+                opt.AddTrigger(opt => opt.ForJob(ServiceJobKey)
+                .WithIdentity("ServiceMonitor Trigger")
+                .StartNow()
+                .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(20)).RepeatForever())
+                .WithDescription("Service monitor Job"));
+            });
+            builder.Services.AddQuartzHostedService(options =>
+            {
+                // when shutting down we want jobs to complete gracefully
+                options.WaitForJobsToComplete = true;
+                options.AwaitApplicationStarted = true;
+            });
+
+            //DaemonWorker daemonWorker
+            builder.Services.AddHostedService<DaemonWorker>();
+
             var host = builder.Build();
             host.Run();
         }

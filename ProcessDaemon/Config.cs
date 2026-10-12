@@ -29,6 +29,10 @@ namespace ProcessDaemon
         public bool CreateNoWindow { get; set; }
 
         public bool UseShellExecute { get; set; }
+
+        public int Type {  get; set; }
+
+        public bool Enabled {  get; set; }
     }
 
     public class Config

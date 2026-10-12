@@ -1,5 +1,18 @@
 ﻿{
-  "Type": "2",
+  "Schema": {
+    "Name": "名称 influxd,如果是服务类型，可以只配置Name",
+    "FileName": "应用程序路径 D:\\Develop\\influxdb1\\influxdb-1.7.9\\influxd.exe",
+    "Arguments": "启动参数 -config .\\influxdb.conf",
+    "WorkingDirectory": "工作目录 D:\\Develop\\influxdb1\\influxdb-1.7.9",
+    "Environment": [],
+    "UseShellExecute": "是否启用shell true,false",
+    "CreateNoWindow": "是否创建Window true,false",
+    "AutoStart": "是否自动重启 true,false",
+    "AfterStopped": 1,
+    "DelayForSeconds": "停止后延迟启动时间,数值类型",
+    "Type": "类型，1-定时扫描，不监听，2-监听进程退出，3-服务",
+    "Enabled": "是否启用"
+  },
   "Profiles": [
     {
       "Name": "influxd",
@@ -11,7 +24,37 @@
       "CreateNoWindow": true,
       "AutoStart": true,
       "AfterStopped": 1,
-      "DelayForSeconds": 5
+      "DelayForSeconds": 5,
+      "Type": "2",
+      "Enabled": true
+    },
+    {
+      "Name": "Llama",
+      "FileName": "D:\\Develop\\llama-cpp\\llama-server.exe",
+      "Arguments": "-m D:\\Develop\\llama-cpp\\Models\\Qwen_Qwen2.5-1.5B-Instruct-GGUF_qwen2.5-1.5b-instruct-q5_k_m.gguf",
+      "WorkingDirectory": "D:\\Develop\\llama-cpp",
+      "Environment": [],
+      "UseShellExecute": false,
+      "CreateNoWindow": true,
+      "AutoStart": true,
+      "AfterStopped": 1,
+      "DelayForSeconds": 5,
+      "Type": "2",
+      "Enabled": true
+    },
+    {
+      "Name": "influxd",
+      "FileName": "D:\\Develop\\influxdb1\\influxdb-1.7.9\\influxd.exe",
+      "Arguments": "-config .\\influxdb.conf",
+      "WorkingDirectory": "D:\\Develop\\influxdb1\\influxdb-1.7.9",
+      "Environment": [],
+      "UseShellExecute": false,
+      "CreateNoWindow": true,
+      "AutoStart": true,
+      "AfterStopped": 1,
+      "DelayForSeconds": 5,
+      "Type": "3",
+      "Enabled": false
     }
   ]
 }
