@@ -40,7 +40,7 @@ namespace ServiceMonitor
                 opt.AddTrigger(opt => opt.ForJob(jobKey)
                 .WithIdentity("ServiceMonitor Trigger")
                 .StartNow()
-                .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(30)).RepeatForever())
+                .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(20)).RepeatForever())
                 .WithDescription("Service monitor Job"));
             });
             builder.Services.AddQuartzHostedService(options =>
