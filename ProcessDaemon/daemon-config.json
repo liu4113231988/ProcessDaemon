@@ -11,7 +11,11 @@
     "AfterStopped": 1,
     "DelayForSeconds": "停止后延迟启动时间,数值类型",
     "Type": "类型，1-定时扫描，不监听，2-监听进程退出，3-服务",
-    "Enabled": "是否启用"
+    "Enabled": "是否启用",
+    "MaxMemoryMB": "内存监控-最大内存限制(MB)，0表示禁用，仅Type=2生效",
+    "MemoryCheckIntervalSeconds": "内存监控-检查间隔(秒)，默认10秒",
+    "MemoryThresholdCount": "内存监控-时间窗口内超过阈值的最大次数，默认3次",
+    "MemoryTimeWindowSeconds": "内存监控-时间窗口(秒)，默认300秒"
   },
   "Profiles": [
     {
@@ -26,7 +30,11 @@
       "AfterStopped": 1,
       "DelayForSeconds": 5,
       "Type": "2",
-      "Enabled": true
+      "Enabled": true,
+      "MaxMemoryMB": 0,
+      "MemoryCheckIntervalSeconds": 10,
+      "MemoryThresholdCount": 3,
+      "MemoryTimeWindowSeconds": 300
     },
     {
       "Name": "Llama",

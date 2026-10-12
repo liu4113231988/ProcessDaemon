@@ -33,6 +33,15 @@ namespace ProcessDaemon
         public int Type {  get; set; }
 
         public bool Enabled {  get; set; }
+
+        // Memory monitoring (Type=2 only)
+        public int MaxMemoryMB { get; set; }              // Maximum allowed memory in MB (0 = disabled)
+
+        public int MemoryCheckIntervalSeconds { get; set; } // Interval between memory checks
+
+        public int MemoryThresholdCount { get; set; }       // Number of breaches within time window before restart
+
+        public int MemoryTimeWindowSeconds { get; set; }    // Time window for counting breaches
     }
 
     public class Config
